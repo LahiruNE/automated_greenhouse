@@ -5,20 +5,24 @@
 Servo servo;
 
 #define DHTTYPE DHT11 
-const int DHTPin = 5;
+const int DHTPin = 5; //temperature
 DHT dht(DHTPin, DHTTYPE);
 
 const char* ssid = "JaraWifi";
 const char* password = "jaraz12345";
 
-int autoStatus = 0;
+bool autoStatus = false;
 
 WiFiServer server(80);
 
-void setup() {    
+void setup() {  
+  pinMode(4, OUTPUT);//light
+  pinMode(14, OUTPUT);//tankvalve
+  pinMode(12,OUTPUT);//fan
+    
   Serial.begin(115200);
   dht.begin();
-  servo.attach(2);
+  servo.attach(2); // door
   servo.write(0);
   
   delay(10);  
@@ -52,12 +56,15 @@ void loop() {
   String humid = String(dht.readHumidity(),2);
   
   //automatic temp control module
-  if(dht.readTemperature() > 25){
-    servo.write(120);
+  if(autoStatus){
+    if(dht.readTemperature() > 25){
+      servo.write(120);
+    }
+    else{
+      servo.write(0);  
+    }  
   }
-  else{
-    servo.write(0);  
-  }
+  
        
   // Check if a client has connected
   WiFiClient client = server.available();
@@ -77,9 +84,9 @@ void loop() {
   client.flush();
 
   if (req.indexOf("/toggleauto") != -1){
-    Serial.println("Temperature : " + temp);
+    autoStatus = !autoStatus;
    
-    s = "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow- Methods: GET\r\nAccess-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept\r\nContent-Type: text/plain\r\n\r\n" + temp;    
+    s = "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow- Methods: GET\r\nAccess-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept\r\nContent-Type: text/plain\r\n\r\nSuccess";    
   }  
   else if (req.indexOf("/getautostatus") != -1){   
     s = "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow- Methods: GET\r\nAccess-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept\r\nContent-Type: text/plain\r\n\r\n" + String(autoStatus);    
@@ -101,22 +108,22 @@ void loop() {
     s = "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow- Methods: GET\r\nAccess-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept\r\nContent-Type: text/plain\r\n\r\n" + temp + "&" + humid;    
   }
   else if (req.indexOf("/lighton") != -1){
-    digitalWrite(2, HIGH);
+    digitalWrite(4, HIGH);
    
     s = "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow- Methods: GET\r\nAccess-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept\r\nContent-Type: text/plain\r\n\r\nLightOn";    
   }
   else if (req.indexOf("/lightoff") != -1){
-    digitalWrite(2, LOW);
+    digitalWrite(4, LOW);
    
     s = "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow- Methods: GET\r\nAccess-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept\r\nContent-Type: text/plain\r\n\r\nLightOFf";    
   } 
   else if (req.indexOf("/nlighton") != -1){
-    digitalWrite(2, HIGH);
+    digitalWrite(4, HIGH);
    
     s = "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow- Methods: GET\r\nAccess-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept\r\nContent-Type: text/plain\r\n\r\nnLightOn";    
   }
   else if (req.indexOf("/nlightoff") != -1){
-    digitalWrite(2, LOW);
+    digitalWrite(4, LOW);
    
     s = "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow- Methods: GET\r\nAccess-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept\r\nContent-Type: text/plain\r\n\r\nnLightOFf";    
   } 
@@ -131,32 +138,32 @@ void loop() {
     s = "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow- Methods: GET\r\nAccess-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept\r\nContent-Type: text/plain\r\n\r\ndoorclose";    
   }
   else if (req.indexOf("/valveopen") != -1){
-    digitalWrite(2, HIGH);
+    digitalWrite(14, HIGH);
    
     s = "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow- Methods: GET\r\nAccess-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept\r\nContent-Type: text/plain\r\n\r\nvalveopen";    
   }
   else if (req.indexOf("/valveclose") != -1){
-    digitalWrite(2, LOW);
+    digitalWrite(14, LOW);
    
     s = "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow- Methods: GET\r\nAccess-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept\r\nContent-Type: text/plain\r\n\r\nvalveclose";    
   } 
   else if (req.indexOf("/alarmon") != -1){
-    digitalWrite(2, HIGH);
+    digitalWrite(4, HIGH);
    
     s = "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow- Methods: GET\r\nAccess-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept\r\nContent-Type: text/plain\r\n\r\nalarmOn";    
   }
   else if (req.indexOf("/alarmoff") != -1){
-    digitalWrite(2, LOW);
+    digitalWrite(4, LOW);
    
     s = "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow- Methods: GET\r\nAccess-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept\r\nContent-Type: text/plain\r\n\r\nalarmOFf";    
   } 
   else if (req.indexOf("/fanon") != -1){
-    digitalWrite(2, HIGH);
+    digitalWrite(12, HIGH);
    
     s = "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow- Methods: GET\r\nAccess-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept\r\nContent-Type: text/plain\r\n\r\nFanOn";    
   }
   else if (req.indexOf("/fanoff") != -1){
-    digitalWrite(2, LOW);
+    digitalWrite(12, LOW);
    
     s = "HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow- Methods: GET\r\nAccess-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept\r\nContent-Type: text/plain\r\n\r\nFanOFf";    
   }        
